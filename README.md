@@ -7,9 +7,9 @@ reference: https://github.com/CaitieM20/DistributedSagas
 Start
 
 2.
-Book car
 Book hotel
-Book flight
+// Book car
+// Book flight
 
 3.
 Pay

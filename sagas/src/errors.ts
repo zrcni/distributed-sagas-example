@@ -17,6 +17,8 @@ class AppError<D = unknown, M = unknown> extends Error {
   }
 }
 
+export class ValidationError extends AppError {}
+export class NotFoundError extends AppError {}
 export class ConflictError extends AppError {}
 export class TimeoutError extends AppError {}
 export class InvalidSagaMessageError extends AppError {}
