@@ -4,9 +4,9 @@ import EventEmitter from "events"
 import { SagaMessage, SagaMessageType } from "./SagaMessage"
 import { SagaState } from "./SagaState"
 import { validateSagaUpdate } from "./saga-state-update"
-import { SagaLog } from "@/types"
 import { Result, ResultError, ResultOk } from "@/Result"
 import { timeout } from "@/utils"
+import { SagaLog } from "./types"
 
 export class Saga {
   sagaId: string

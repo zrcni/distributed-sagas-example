@@ -1,7 +1,7 @@
 import { ConflictError } from "@/errors"
 import { logger } from "@/logger"
 import { Result, ResultError, ResultOk } from "@/Result"
-import { SagaLog } from "@/types"
+import { SagaLog } from "./types"
 import { SagaCoordinator } from "./SagaCoordinator"
 import { SagaMessage } from "./SagaMessage"
 

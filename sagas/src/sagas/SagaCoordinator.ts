@@ -1,5 +1,5 @@
 import { Result } from "@/Result"
-import { SagaLog } from "@/types"
+import { SagaLog } from "./types"
 import { Saga } from "./Saga"
 import { SagaRecovery, SagaRecoveryType } from "./SagaRecovery"
 

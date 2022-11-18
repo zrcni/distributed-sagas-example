@@ -1,13 +1,5 @@
-import { ResultError, ResultOk } from "./Result"
-import { SagaMessage } from "./sagas/SagaMessage"
-
-declare global {
-  namespace jest {
-    interface Matchers<R> {
-      toBeOkResult(): R
-    }
-  }
-}
+import { ResultError, ResultOk } from "@/Result"
+import { SagaMessage } from "./SagaMessage"
 
 export interface SagaLog {
   startSaga<D>(sagaId: string, job: D): Promise<ResultOk | ResultError>
