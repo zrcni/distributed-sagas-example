@@ -4,9 +4,7 @@ import { HotelService } from "@/hotel/HotelService"
 import { PaymentService } from "@/payment/PaymentService"
 import { InMemorySagaLog } from "@/sagas/InMemorySagaLog"
 import { SagaCoordinator } from "@/sagas/SagaCoordinator"
-import { SagaRunner } from "@/sagas/SagaRunner"
 import { InMemoryKeyValueStore } from "@/store/InMemoryKeyValueStore"
-import { BookHotelRoomSaga } from "../BookHotelRoomSaga"
 import { BookHotelRoomSubscription } from "../BookHotelRoomSubscription"
 import { BookHotelRoomMessagePayload, BookHotelRoomSagaData } from "../types"
 import waitFor from "wait-for-expect"
@@ -34,58 +32,6 @@ describe("BookHotelRoomSaga", () => {
    * - invoice is created
    */
   it("book a hotel room", async () => {
-    /** arrange */
-    const sagaResult = await coordinator.createSaga<BookHotelRoomSagaData>(
-      "book-hotel-room",
-      {
-        roomId: "room-1",
-        username: "user-1",
-        amount: 500,
-      }
-    )
-    expect(sagaResult).toBeOkResult()
-    if (sagaResult.isError()) return
-
-    const saga = sagaResult.data
-    const bookHotelRoomSaga = new BookHotelRoomSaga(
-      hotelService,
-      paymentService
-    ).getSagaDefinition()
-
-    const createRoomResult = await hotelService.createRoom("room-1", 500)
-    expect(createRoomResult).toBeOkResult()
-
-    const createAccountResult = await paymentService.createAccount("user-1")
-    expect(createAccountResult).toBeOkResult()
-
-    const addFundsResult = await paymentService.addFunds("user-1", 500)
-    expect(addFundsResult).toBeOkResult()
-
-    /** act */
-    await new SagaRunner(saga, bookHotelRoomSaga)
-      .onError((err) => console.error(err))
-      .run()
-
-    /** assert */
-    expect(await saga.isSagaCompleted()).toBe(true)
-
-    const getReservationResult = await hotelService.getReservation("room-1")
-    expect(getReservationResult).toBeOkResult()
-    expect(getReservationResult.data).toHaveProperty("username", "user-1")
-
-    const getInvoicesResult = await paymentService.getInvoicesByUsername(
-      "user-1"
-    )
-    expect(getInvoicesResult).toBeOkResult()
-    if (getInvoicesResult.isError()) return
-
-    expect(getInvoicesResult.data).toHaveLength(1)
-    const invoice = getInvoicesResult.data[0]
-    expect(invoice).toHaveProperty("amount", 500)
-    expect(invoice.cancelledAt).toBe(null)
-  })
-
-  it("BookHotelRoomSubscription", async () => {
     /** arrange */
     const createRoomResult = await hotelService.createRoom("room-1", 500)
     expect(createRoomResult).toBeOkResult()
@@ -128,5 +74,20 @@ describe("BookHotelRoomSaga", () => {
       roomId: "room-1",
       username: "user-1",
     })
+
+    const getReservationResult = await hotelService.getReservation("room-1")
+    expect(getReservationResult).toBeOkResult()
+    expect(getReservationResult.data).toHaveProperty("username", "user-1")
+
+    const getInvoicesResult = await paymentService.getInvoicesByUsername(
+      "user-1"
+    )
+    expect(getInvoicesResult).toBeOkResult()
+    if (getInvoicesResult.isError()) return
+
+    expect(getInvoicesResult.data).toHaveLength(1)
+    const invoice = getInvoicesResult.data[0]
+    expect(invoice).toHaveProperty("amount", 500)
+    expect(invoice.cancelledAt).toBe(null)
   })
 })
