@@ -1,32 +1,27 @@
+import { IHotelRoomReservation } from "@/hotel/HotelRoomReservation"
 import { HotelService } from "@/hotel/HotelService"
+import { PaymentService } from "@/payment"
+import { RequestPaymentResult } from "@/payment/types"
 import { start } from "@/sagas/saga-definition"
-
-type BookHotelRoomSagaData = {
-  roomId: string
-  amount: number
-  username: string
-}
+import { BookHotelRoomSagaData } from "./types"
 
 export class BookHotelRoomSaga {
   private sagaDefinition = start()
-    .invoke(this.reserveRoom)
-    .compensate(this.releaseRoom)
+    .invoke(this.reserveRoom.bind(this))
+    .compensate(this.releaseRoom.bind(this))
     .withName("reserve-room")
     .step()
-    .invoke(this.requestPayment)
-    .compensate(this.refundPayment)
+    .invoke(this.requestPayment.bind(this))
+    .compensate(this.refundPayment.bind(this))
     .withName("request-payment")
     .end()
 
   private hotelService: HotelService
+  private paymentService: PaymentService
 
-  constructor(hotelService: HotelService) {
+  constructor(hotelService: HotelService, paymentService: PaymentService) {
     this.hotelService = hotelService
-
-    this.reserveRoom = this.reserveRoom.bind(this)
-    this.releaseRoom = this.releaseRoom.bind(this)
-    this.requestPayment = this.requestPayment.bind(this)
-    this.refundPayment = this.refundPayment.bind(this)
+    this.paymentService = paymentService
   }
 
   getSagaDefinition() {
@@ -48,9 +43,49 @@ export class BookHotelRoomSaga {
     return reservation.toJSON()
   }
 
-  releaseRoom(data: BookHotelRoomSagaData) {}
+  async releaseRoom(
+    _data: BookHotelRoomSagaData,
+    prevResult: IHotelRoomReservation
+  ) {
+    const result = await this.hotelService.releaseRoom(
+      prevResult.confirmationNumber
+    )
+    if (result.isError()) {
+      const error = result.data
+      throw error
+    }
+    return true
+  }
 
-  requestPayment(data: BookHotelRoomSagaData) {}
+  async requestPayment(
+    data: BookHotelRoomSagaData,
+    prevResult: IHotelRoomReservation
+  ) {
+    const result = await this.paymentService.requestPayment(
+      prevResult.confirmationNumber,
+      prevResult.username,
+      data.amount
+    )
 
-  refundPayment(data: BookHotelRoomSagaData) {}
+    if (result.isError()) {
+      const error = result.data
+      throw error
+    }
+
+    return result.data
+  }
+
+  async refundPayment(
+    _data: BookHotelRoomSagaData,
+    prevResult: RequestPaymentResult
+  ) {
+    const result = await this.paymentService.refundPayment(
+      prevResult.invoiceNumber
+    )
+    if (result.isError()) {
+      const error = result.data
+      throw error
+    }
+    return true
+  }
 }

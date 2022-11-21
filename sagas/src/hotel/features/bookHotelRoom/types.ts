@@ -1,22 +1,12 @@
-export type BookHotelRoomMessagePayload = {
-  eventName: "book-hotel-room"
+export type BookHotelRoomSagaData = {
   roomId: string
   amount: number
   username: string
 }
 
-export type ReserveRoomMessagePayload = {
-  eventName: "reserve-room"
-  sagaId: string
-}
-
-export type RoomReservedMessagePayload = {
-  eventName: "room-reserved"
-  confirmationNumber: string
+export type BookHotelRoomMessagePayload = {
+  eventName: "book-hotel-room"
   roomId: string
-}
-
-export type BookHotelRoomSagaStartPayload = {
-  roomId: string
+  amount: number
   username: string
 }

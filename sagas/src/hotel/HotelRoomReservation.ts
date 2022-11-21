@@ -9,7 +9,7 @@ export class HotelRoomReservation {
   username: string
   confirmationNumber: string
 
-  toJSON() {
+  toJSON(): IHotelRoomReservation {
     return {
       roomId: this.roomId,
       username: this.username,

@@ -15,7 +15,7 @@ export class PaymentAccount {
     this.balance = data.balance
   }
 
-  toJSON() {
+  toJSON(): IPaymentAccount {
     return {
       username: this.username,
       balance: this.balance,

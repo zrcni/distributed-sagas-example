@@ -15,7 +15,7 @@ export class Invoice {
   amount: number
   cancelledAt: Date | null
 
-  toJSON() {
+  toJSON(): IInvoice {
     return {
       invoiceNumber: this.invoiceNumber,
       username: this.username,

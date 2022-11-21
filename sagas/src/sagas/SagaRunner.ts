@@ -19,17 +19,18 @@ export class SagaRunner {
 
   onError(handleError: (err: Error) => void) {
     this.handleError = handleError
+    return this
   }
 
-  getCurrentStep(): SagaStep | null {
+  private getCurrentStep(): SagaStep | null {
     return this.sagaDefinition.steps[this.currentStepIndex] ?? null
   }
 
-  getPreviousStep(): SagaStep | null {
+  private getPreviousStep(): SagaStep | null {
     return this.sagaDefinition.steps[this.currentStepIndex - 1] ?? null
   }
 
-  incrementStep() {
+  private incrementStep() {
     this.currentStepIndex += 1
   }
 
@@ -56,7 +57,7 @@ export class SagaRunner {
     }
   }
 
-  async initialize() {
+  private async initialize() {
     this.currentStepIndex = -1
 
     for (const step of this.sagaDefinition.steps) {
@@ -75,7 +76,7 @@ export class SagaRunner {
     }
   }
 
-  async iterate(data: unknown) {
+  private async iterate(data: unknown) {
     const step = this.getCurrentStep()
 
     if (step.isStart) {
@@ -120,7 +121,7 @@ export class SagaRunner {
     return this.iterate(data)
   }
 
-  async compensate() {
+  private async compensate() {
     const data = await this.saga.getJob()
 
     for (let i = this.sagaDefinition.steps.length - 1; i >= 0; i--) {

@@ -4,10 +4,7 @@ import { KeyValueStore } from "@/store/types"
 import { uuid } from "@/utils"
 import { IInvoice, Invoice } from "./Invoice"
 import { IPaymentAccount, PaymentAccount } from "./PaymentAccount"
-
-type RequestPaymentResult = {
-  invoiceNumber: string
-}
+import { RequestPaymentResult } from "./types"
 
 export class PaymentService {
   accountStore: KeyValueStore<IPaymentAccount>
@@ -19,6 +16,70 @@ export class PaymentService {
   ) {
     this.accountStore = accountStore
     this.invoiceStore = invoiceStore
+  }
+
+  async createAccount(
+    username: string
+  ): Promise<ResultOk<IPaymentAccount> | ResultError> {
+    try {
+      const paymentAccount = new PaymentAccount({
+        username,
+        balance: 0,
+      })
+      await this.accountStore.set(username, paymentAccount.toJSON())
+      return Result.ok(paymentAccount.toJSON())
+    } catch (err) {
+      return Result.error<Error>(err)
+    }
+  }
+
+  async getInvoicesByUsername(
+    username: string
+  ): Promise<ResultOk<IInvoice[]> | ResultError> {
+    try {
+      let invoices = await this.invoiceStore.getAll()
+      invoices = invoices.filter((invoice) => invoice.username === username)
+      return Result.ok(invoices)
+    } catch (err) {
+      return Result.error<Error>(err)
+    }
+  }
+
+  async addBalance(
+    username: string,
+    amount: number
+  ): Promise<ResultOk<IPaymentAccount> | ResultError> {
+    let accountData: IPaymentAccount
+
+    try {
+      accountData = await this.accountStore.get(username)
+    } catch (err) {
+      return Result.error<Error>(err)
+    }
+
+    if (!accountData) {
+      return Result.error(
+        new NotFoundError("payment account not found", { username })
+      )
+    }
+
+    const paymentAccount = new PaymentAccount(accountData)
+
+    const addResult = paymentAccount.addBalance(amount)
+    if (addResult.isError()) {
+      return addResult
+    }
+
+    try {
+      await this.accountStore.set(
+        paymentAccount.username,
+        paymentAccount.toJSON()
+      )
+
+      return Result.ok(paymentAccount.toJSON())
+    } catch (err) {
+      return Result.error(err)
+    }
   }
 
   /**
@@ -159,7 +220,7 @@ export class PaymentService {
       )
     } catch (err) {
       await this.invoiceStore.set(invoice.invoiceNumber, prevInvoiceData)
-      Result.error(err)
+      return Result.error(err)
     }
 
     return Result.ok()
