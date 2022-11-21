@@ -27,7 +27,7 @@ export class PaymentAccount {
     return Result.ok()
   }
 
-  subtractBalance(amount: number): ResultOk | ResultError<ValidationError> {
+  subtractFunds(amount: number): ResultOk | ResultError<ValidationError> {
     if (amount > this.balance) {
       return Result.error(
         new ValidationError("payment account does not have enough balance", {

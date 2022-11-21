@@ -150,7 +150,7 @@ export class PaymentService {
 
     const paymentAccount = new PaymentAccount(accountData)
 
-    const result = paymentAccount.subtractBalance(amount)
+    const result = paymentAccount.subtractFunds(amount)
     if (result.isError()) {
       return result
     }
