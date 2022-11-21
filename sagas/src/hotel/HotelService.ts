@@ -1,4 +1,4 @@
-import { ConflictError, NotFoundError } from "@/errors"
+import { ConflictError } from "@/errors"
 import { Result, ResultError, ResultOk } from "@/Result"
 import { KeyValueStore } from "@/store/types"
 import { uuid } from "@/utils"
@@ -14,6 +14,15 @@ export class HotelService {
     this.store = store
   }
 
+  async getReservation(roomId: string) {
+    try {
+      const reservation = await this.store.get(roomId)
+      return Result.ok(reservation)
+    } catch (err) {
+      return Result.error<Error>(err)
+    }
+  }
+
   async reserveRoom(
     roomId: string,
     username: string
@@ -23,7 +32,7 @@ export class HotelService {
     try {
       data = await this.store.get(roomId)
     } catch (err) {
-      return Result.error(err)
+      return Result.error<Error>(err)
     }
 
     // idempotency
@@ -48,7 +57,7 @@ export class HotelService {
     try {
       await this.store.set(roomId, reservation.toJSON())
     } catch (err) {
-      return Result.error(err)
+      return Result.error<Error>(err)
     }
 
     return Result.ok(reservation)

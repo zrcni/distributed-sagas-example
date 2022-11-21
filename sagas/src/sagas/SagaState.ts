@@ -15,9 +15,6 @@ type TaskData = {
   compensatingTaskEnd: unknown
 }
 
-/**
- * TODO verify methods that get status
- */
 export class SagaState<D = unknown> {
   sagaId: string
   job: D

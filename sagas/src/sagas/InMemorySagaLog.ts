@@ -33,8 +33,18 @@ export class InMemorySagaLog implements SagaLog {
     return Result.ok(sagaIds)
   }
 
-  async startSaga<D>(sagaId: string, job: D): Promise<ResultOk> {
+  async startSaga<D>(
+    sagaId: string,
+    job: D
+  ): Promise<ResultOk | ResultError<ConflictError>> {
     logger.info(`Start saga ${sagaId}`)
+
+    const messages = this.sagas[sagaId]
+    if (messages) {
+      return Result.error(
+        new ConflictError("saga has already been started", { sagaId })
+      )
+    }
 
     const msg = SagaMessage.createStartSagaMessage(sagaId, job)
 
@@ -46,7 +56,9 @@ export class InMemorySagaLog implements SagaLog {
   async logMessage(
     msg: SagaMessage
   ): Promise<ResultOk | ResultError<ConflictError>> {
-    logger.info(`Saga ${msg.sagaId}: ${msg.msgType} ${msg.taskId}`)
+    logger.info(
+      `Saga ${msg.sagaId}: ${msg.msgType}${msg.taskId ? ` ${msg.taskId}` : ""}`
+    )
 
     const messages = this.sagas[msg.sagaId]
 

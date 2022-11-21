@@ -11,17 +11,17 @@ export class SagaCoordinator {
   }
 
   async createSaga<D = unknown>(sagaId: string, job: D) {
-    return Saga.create(sagaId, job, this.log)
+    return Saga.create<D>(sagaId, job, this.log)
   }
 
   getActiveSagaIds() {
     return this.log.getActiveSagaIds()
   }
 
-  async recoverSagaState(
+  async recoverSagaState<D = unknown>(
     sagaId: string,
     recoveryType: SagaRecoveryType
-  ): Promise<Result<Saga> | Result<Error>> {
+  ): Promise<Result<Saga<D>> | Result<Error>> {
     const result = await SagaRecovery.recoverState(sagaId, this)
     if (result.isError()) {
       return result
@@ -29,7 +29,7 @@ export class SagaCoordinator {
 
     const state = result.data
 
-    const saga = await Saga.rehydrateSaga(sagaId, state, this.log)
+    const saga = await Saga.rehydrateSaga<D>(sagaId, state, this.log)
 
     switch (recoveryType) {
       case SagaRecoveryType.RollbackRecovery: {

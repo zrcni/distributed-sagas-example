@@ -3,19 +3,19 @@ import { CancelablePromise } from "cancelable-promise"
 import EventEmitter from "events"
 import { SagaMessage, SagaMessageType } from "./SagaMessage"
 import { SagaState } from "./SagaState"
-import { validateSagaUpdate } from "./saga-state-update"
+import { updateSagaState, validateSagaUpdate } from "./saga-state-update"
 import { Result, ResultError, ResultOk } from "@/Result"
 import { timeout } from "@/utils"
 import { SagaLog } from "./types"
 
-export class Saga {
+export class Saga<StartPayload = unknown> {
   sagaId: string
-  state: SagaState
+  state: SagaState<StartPayload>
   log: SagaLog
   loopPromise?: CancelablePromise
   emitter: EventEmitter
 
-  constructor(sagaId: string, state: SagaState, log: SagaLog) {
+  constructor(sagaId: string, state: SagaState<StartPayload>, log: SagaLog) {
     this.sagaId = sagaId
     this.state = state
     this.log = log
@@ -78,7 +78,7 @@ export class Saga {
     return this.updateSagaState(SagaMessage.createAbortSagaMessage(this.sagaId))
   }
 
-  async startTask<D = unknown>(taskId: string, data: D) {
+  async startTask<D = unknown>(taskId: string, data?: D) {
     return this.updateSagaState(
       SagaMessage.createStartTaskMessage(this.sagaId, taskId, data)
     )
@@ -108,14 +108,12 @@ export class Saga {
       return Result.error(error)
     }
 
-    const result = await this.log.logMessage(msg)
-    if (result.isError()) {
-      return result
+    const logResult = await this.log.logMessage(msg)
+    if (logResult.isError()) {
+      return logResult
     }
 
-    await this.updateSagaState(msg)
-
-    return Result.ok()
+    return updateSagaState(this.state, msg)
   }
 
   async updateSagaState(msg: SagaMessage): Promise<Result> {
@@ -133,12 +131,13 @@ export class Saga {
   }
 
   updateSagaStateLoop() {
+    const handleUpdate = this.handleUpdate.bind(this)
     this.loopPromise = new CancelablePromise(
       async (_resolve, _reject, onCancel) => {
-        this.emitter.on("message", this.handleUpdate)
+        this.emitter.on("message", handleUpdate)
 
         onCancel(() => {
-          this.emitter.off("message", this.handleUpdate)
+          this.emitter.off("message", handleUpdate)
         })
       }
     )
@@ -149,8 +148,12 @@ export class Saga {
     this.emitter.emit(`message:${msg.taskId}`, result)
   }
 
-  static async rehydrateSaga(sagaId: string, state: SagaState, log: SagaLog) {
-    const saga = new Saga(sagaId, state, log)
+  static async rehydrateSaga<D = unknown>(
+    sagaId: string,
+    state: SagaState<D>,
+    log: SagaLog
+  ) {
+    const saga = new Saga<D>(sagaId, state, log)
 
     if (!state.isSagaCompleted()) {
       saga.updateSagaStateLoop()
@@ -163,15 +166,15 @@ export class Saga {
     sagaId: string,
     job: D,
     log: SagaLog
-  ): Promise<ResultOk | ResultError> {
-    const sagaState = SagaState.create(sagaId, job)
+  ): Promise<ResultOk<Saga<D>> | ResultError> {
+    const sagaState = SagaState.create<D>(sagaId, job)
 
-    const result = await log.startSaga(sagaId, job)
+    const result = await log.startSaga<D>(sagaId, job)
     if (result.isError()) {
       return result
     }
 
-    const saga = new Saga(sagaId, sagaState, log)
+    const saga = new Saga<D>(sagaId, sagaState, log)
 
     saga.updateSagaStateLoop()
 

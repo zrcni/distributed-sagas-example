@@ -1,4 +1,4 @@
-import { Result } from "@/Result"
+import { Result, ResultError, ResultOk } from "@/Result"
 import {
   InvalidSagaMessageError,
   InvalidSagaStateError,
@@ -52,6 +52,7 @@ export function validateSagaUpdate(
           }
         }
       }
+      break
     }
 
     case SagaMessageType.AbortSaga: {
@@ -63,6 +64,7 @@ export function validateSagaUpdate(
           }
         )
       }
+      break
     }
 
     case SagaMessageType.StartTask: {
@@ -93,6 +95,7 @@ export function validateSagaUpdate(
           }
         )
       }
+      break
     }
 
     case SagaMessageType.EndTask: {
@@ -120,6 +123,7 @@ export function validateSagaUpdate(
           }
         )
       }
+      break
     }
 
     case SagaMessageType.StartCompensatingTask: {
@@ -161,6 +165,7 @@ export function validateSagaUpdate(
           }
         )
       }
+      break
     }
 
     case SagaMessageType.EndCompensatingTask: {
@@ -201,13 +206,17 @@ export function validateSagaUpdate(
           }
         )
       }
+      break
     }
   }
 
   return null
 }
 
-export function updateSagaState(state: SagaState, msg: SagaMessage) {
+export function updateSagaState(
+  state: SagaState,
+  msg: SagaMessage
+): ResultOk | ResultError<InvalidSagaStateUpdateError> {
   switch (msg.msgType) {
     case SagaMessageType.StartSaga: {
       return Result.error(
@@ -222,10 +231,12 @@ export function updateSagaState(state: SagaState, msg: SagaMessage) {
 
     case SagaMessageType.EndSaga: {
       state.sagaCompleted = true
+      break
     }
 
     case SagaMessageType.AbortSaga: {
       state.sagaAborted = true
+      break
     }
 
     case SagaMessageType.StartTask: {
@@ -234,6 +245,7 @@ export function updateSagaState(state: SagaState, msg: SagaMessage) {
       }
 
       state.taskStatus[msg.taskId] = TaskStatus.TaskStarted
+      break
     }
 
     case SagaMessageType.EndTask: {
@@ -242,6 +254,7 @@ export function updateSagaState(state: SagaState, msg: SagaMessage) {
       if (msg.data != null) {
         state.addTaskData(msg.taskId, msg.msgType, msg.data)
       }
+      break
     }
 
     case SagaMessageType.StartCompensatingTask: {
@@ -250,6 +263,7 @@ export function updateSagaState(state: SagaState, msg: SagaMessage) {
       if (msg.data != null) {
         state.addTaskData(msg.taskId, msg.msgType, msg.data)
       }
+      break
     }
 
     case SagaMessageType.EndCompensatingTask: {
@@ -258,6 +272,7 @@ export function updateSagaState(state: SagaState, msg: SagaMessage) {
       }
 
       state.taskStatus[msg.taskId] = TaskStatus.CompensatingTaskCompleted
+      break
     }
   }
 
