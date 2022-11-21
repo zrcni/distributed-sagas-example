@@ -66,7 +66,7 @@ export class SagaState<D = unknown> {
   }
 
   isTaskStarted(taskId: string) {
-    return this.taskStatus[taskId] === TaskStatus.TaskStarted
+    return this.taskStatus[taskId] >= TaskStatus.TaskStarted
   }
 
   getStartTaskData(taskId: string) {
@@ -78,7 +78,7 @@ export class SagaState<D = unknown> {
   }
 
   isTaskCompleted(taskId: string) {
-    return this.taskStatus[taskId] === TaskStatus.TaskCompleted
+    return this.taskStatus[taskId] >= TaskStatus.TaskCompleted
   }
 
   getEndTaskData(taskId: string) {
@@ -90,7 +90,7 @@ export class SagaState<D = unknown> {
   }
 
   isCompensatingTaskStarted(taskId: string) {
-    return this.taskStatus[taskId] === TaskStatus.CompensatingTaskStarted
+    return this.taskStatus[taskId] >= TaskStatus.CompensatingTaskStarted
   }
 
   getStartCompensatingTaskData(taskId: string) {

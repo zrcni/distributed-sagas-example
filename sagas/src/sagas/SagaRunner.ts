@@ -1,7 +1,7 @@
 import { logger } from "@/logger"
 import { SagaDefinition } from "@/sagas/saga-definition/SagaDefinition"
 import { Saga } from "./Saga"
-import { EndStep, SagaStep, StartStep } from "./saga-definition/SagaStep"
+import { SagaStep } from "./saga-definition/SagaStep"
 
 type ErrorHandler = (err: Error) => void
 
@@ -23,6 +23,10 @@ export class SagaRunner {
 
   getCurrentStep(): SagaStep | null {
     return this.sagaDefinition.steps[this.currentStepIndex] ?? null
+  }
+
+  getPreviousStep(): SagaStep | null {
+    return this.sagaDefinition.steps[this.currentStepIndex - 1] ?? null
   }
 
   incrementStep() {
@@ -58,10 +62,10 @@ export class SagaRunner {
     for (const step of this.sagaDefinition.steps) {
       this.currentStepIndex += 1
 
-      if (step instanceof StartStep) {
+      if (step.isStart) {
         continue
       }
-      if (step instanceof EndStep) {
+      if (step.isEnd) {
         break
       }
 
@@ -74,12 +78,12 @@ export class SagaRunner {
   async iterate(data: unknown) {
     const step = this.getCurrentStep()
 
-    if (step instanceof StartStep) {
+    if (step.isStart) {
       this.incrementStep()
       return this.iterate(data)
     }
 
-    if (step instanceof EndStep) {
+    if (step.isEnd) {
       logger.info(`Ending saga`)
       const endSagaResult = await this.saga.endSaga()
       if (endSagaResult.isError()) {
@@ -89,13 +93,22 @@ export class SagaRunner {
       return
     }
 
-    const startTaskResult = await this.saga.startTask(step.taskName)
+    const prevStep = this.getPreviousStep()
+    const prevStepResult =
+      prevStep && !prevStep.isStart
+        ? await this.saga.getEndTaskData(prevStep.taskName)
+        : null
+
+    const startTaskResult = await this.saga.startTask(
+      step.taskName,
+      prevStepResult
+    )
     if (startTaskResult.isError()) {
       throw startTaskResult.data
     }
 
     logger.info(`Running task ${step.taskName}`)
-    const result = await step.invokeCallback(data)
+    const result = await step.invokeCallback(data, prevStepResult)
     const endTaskResult = await this.saga.endTask(step.taskName, result)
 
     if (endTaskResult.isError()) {
@@ -113,12 +126,23 @@ export class SagaRunner {
     for (let i = this.sagaDefinition.steps.length - 1; i >= 0; i--) {
       const step = this.sagaDefinition.steps[i]
 
+      if (step.isStart || step.isEnd) {
+        continue
+      }
+
       if (await this.saga.isTaskCompleted(step.taskName)) {
-        const taskData = await this.saga.getStartTaskData(step.taskName)
-        await this.saga.startCompensatingTask(step.taskName, taskData)
+        const taskData = await this.saga.getEndTaskData(step.taskName)
+        const startCompResult = await this.saga.startCompensatingTask(
+          step.taskName,
+          taskData
+        )
+        if (startCompResult.isError()) {
+          throw startCompResult.data
+        }
+
         logger.info(`Compensating task ${step.taskName}`)
 
-        const result = await step.compensateCallback(data)
+        const result = await step.compensateCallback(data, taskData)
         logger.info(`Compensated task ${step.taskName}`)
         await this.saga.endCompensatingTask(step.taskName, result)
       }

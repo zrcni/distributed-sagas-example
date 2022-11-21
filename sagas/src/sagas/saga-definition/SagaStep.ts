@@ -6,6 +6,8 @@ export class SagaStep {
   public invokeCallback: StepInvokeCallback
   public compensateCallback: StepCompensateCallback
   public taskName: string
+  public isStart = false
+  public isEnd = false
 
   constructor(builder: SagaBuilder) {
     this.builder = builder
@@ -19,7 +21,9 @@ export class SagaStep {
     return this.builder.end()
   }
 
-  invoke<D = unknown>(callback: StepInvokeCallback<D>) {
+  invoke<Data = unknown, PrevResult = unknown, ResultData = unknown>(
+    callback: StepInvokeCallback<Data, PrevResult, ResultData>
+  ) {
     this.invokeCallback = callback
     if (!this.taskName) {
       this.taskName = callback.name
@@ -38,5 +42,11 @@ export class SagaStep {
   }
 }
 
-export class StartStep extends SagaStep {}
-export class EndStep extends SagaStep {}
+export class StartStep extends SagaStep {
+  public isStart = true
+  public isEnd = false
+}
+export class EndStep extends SagaStep {
+  public isStart = false
+  public isEnd = true
+}
