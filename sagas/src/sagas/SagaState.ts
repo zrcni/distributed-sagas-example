@@ -9,10 +9,10 @@ export enum TaskStatus {
 }
 
 type TaskData = {
-  taskStart: unknown
-  taskEnd: unknown
-  compensatingTaskStart: unknown
-  compensatingTaskEnd: unknown
+  taskStart: any
+  taskEnd: any
+  compensatingTaskStart: any
+  compensatingTaskEnd: any
 }
 
 export class SagaState<D = unknown> {
@@ -81,7 +81,7 @@ export class SagaState<D = unknown> {
     return this.taskStatus[taskId] >= TaskStatus.TaskCompleted
   }
 
-  getEndTaskData(taskId: string) {
+  getEndTaskData<D = unknown>(taskId: string): D | null {
     const data = this.taskData[taskId]
     if (!data) {
       return null

@@ -42,8 +42,8 @@ export class Saga<StartPayload = unknown> {
     return this.state.isTaskCompleted(taskId)
   }
 
-  async getEndTaskData(taskId: string) {
-    return this.state.getEndTaskData(taskId)
+  async getEndTaskData<D = unknown>(taskId: string) {
+    return this.state.getEndTaskData<D>(taskId)
   }
 
   async isCompensatingTaskStarted(taskId: string) {

@@ -1,6 +1,7 @@
 import { Channel } from "@/channel/Channel"
 import { HotelService } from "@/hotel/HotelService"
 import { PaymentService } from "@/payment/PaymentService"
+import { RequestPaymentResult } from "@/payment/types"
 import { SagaCoordinator } from "@/sagas/SagaCoordinator"
 import { SagaRunner } from "@/sagas/SagaRunner"
 import { BookHotelRoomSaga } from "./BookHotelRoomSaga"
@@ -8,6 +9,7 @@ import {
   BookHotelRoomMessagePayload,
   BookHotelRoomSagaData,
   HotelRoomBookedMessagePayload,
+  ReserveHotelRoomResult,
 } from "./types"
 
 export class BookHotelRoomSubscription {
@@ -70,11 +72,17 @@ export class BookHotelRoomSubscription {
 
     if (await saga.isSagaCompleted()) {
       const data = await saga.getJob()
+      const reserveRoomResult =
+        await saga.getEndTaskData<ReserveHotelRoomResult>("reserve-room")
+      const requestPaymentResult =
+        await saga.getEndTaskData<RequestPaymentResult>("request-payment")
 
       this.outChannel.publish<HotelRoomBookedMessagePayload>({
         amount: data.amount,
         roomId: data.roomId,
         username: data.username,
+        invoiceNumber: requestPaymentResult.invoiceNumber,
+        confirmationNumber: reserveRoomResult.confirmationNumber,
       })
     }
   }

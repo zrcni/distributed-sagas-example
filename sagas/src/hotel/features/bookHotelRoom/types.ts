@@ -1,3 +1,7 @@
+import { IHotelRoomReservation } from "@/hotel/HotelRoomReservation"
+
+export type ReserveHotelRoomResult = IHotelRoomReservation
+
 export type BookHotelRoomSagaData = {
   roomId: string
   amount: number
@@ -15,4 +19,6 @@ export type HotelRoomBookedMessagePayload = {
   roomId: string
   amount: number
   username: string
+  invoiceNumber: string
+  confirmationNumber: string
 }

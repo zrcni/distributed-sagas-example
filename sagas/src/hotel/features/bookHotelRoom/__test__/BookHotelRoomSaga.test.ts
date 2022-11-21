@@ -69,15 +69,22 @@ describe("BookHotelRoomSaga", () => {
       expect(outChanHandler).toHaveBeenCalled()
     })
 
-    expect(outChanHandler).toHaveBeenCalledWith({
-      amount: 500,
-      roomId: "room-1",
-      username: "user-1",
-    })
+    const args = outChanHandler.mock.calls[0][0]
+    expect(args).toHaveProperty("amount", 500)
+    expect(args).toHaveProperty("roomId", "room-1")
+    expect(args).toHaveProperty("username", "user-1")
 
     const getReservationResult = await hotelService.getReservation("room-1")
     expect(getReservationResult).toBeOkResult()
-    expect(getReservationResult.data).toHaveProperty("username", "user-1")
+    if (getReservationResult.isError()) return
+    const reservation = getReservationResult.data
+
+    expect(reservation).toHaveProperty("username", "user-1")
+
+    expect(args).toHaveProperty(
+      "confirmationNumber",
+      reservation.confirmationNumber
+    )
 
     const getInvoicesResult = await paymentService.getInvoicesByUsername(
       "user-1"
@@ -89,5 +96,7 @@ describe("BookHotelRoomSaga", () => {
     const invoice = getInvoicesResult.data[0]
     expect(invoice).toHaveProperty("amount", 500)
     expect(invoice.cancelledAt).toBe(null)
+
+    expect(args).toHaveProperty("invoiceNumber", invoice.invoiceNumber)
   })
 })

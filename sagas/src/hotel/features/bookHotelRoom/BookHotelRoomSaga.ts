@@ -3,7 +3,7 @@ import { HotelService } from "@/hotel/HotelService"
 import { PaymentService } from "@/payment/PaymentService"
 import { RequestPaymentResult } from "@/payment/types"
 import { start } from "@/sagas/saga-definition"
-import { BookHotelRoomSagaData } from "./types"
+import { BookHotelRoomSagaData, ReserveHotelRoomResult } from "./types"
 
 export class BookHotelRoomSaga {
   private sagaDefinition = start()
@@ -28,7 +28,9 @@ export class BookHotelRoomSaga {
     return this.sagaDefinition
   }
 
-  async reserveRoom(data: BookHotelRoomSagaData) {
+  async reserveRoom(
+    data: BookHotelRoomSagaData
+  ): Promise<ReserveHotelRoomResult> {
     const result = await this.hotelService.reserveRoom(
       data.roomId,
       data.username
@@ -46,7 +48,7 @@ export class BookHotelRoomSaga {
   async releaseRoom(
     _data: BookHotelRoomSagaData,
     prevResult: IHotelRoomReservation
-  ) {
+  ): Promise<boolean> {
     const result = await this.hotelService.releaseRoom(
       prevResult.confirmationNumber
     )
@@ -60,7 +62,7 @@ export class BookHotelRoomSaga {
   async requestPayment(
     data: BookHotelRoomSagaData,
     prevResult: IHotelRoomReservation
-  ) {
+  ): Promise<RequestPaymentResult> {
     const result = await this.paymentService.requestPayment(
       prevResult.confirmationNumber,
       prevResult.username,
@@ -78,7 +80,7 @@ export class BookHotelRoomSaga {
   async refundPayment(
     _data: BookHotelRoomSagaData,
     prevResult: RequestPaymentResult
-  ) {
+  ): Promise<boolean> {
     const result = await this.paymentService.refundPayment(
       prevResult.invoiceNumber
     )
