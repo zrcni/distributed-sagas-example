@@ -1,9 +1,15 @@
 import { Request } from "express"
 import { HttpController } from "@/server/HttpController"
 import { HotelService } from "@/hotel/HotelService"
-import { ConflictError } from "@/errors"
+import { ConflictError, NotFoundError, ValidationError } from "@/errors"
 import { ChannelPublisher } from "@/channel/Channel"
 import { BookHotelRoomMessagePayload } from "./types"
+
+type BookHotelRoomRequest = Request<
+  { room_id: string },
+  undefined,
+  { username: string }
+>
 
 export class BookHotelRoomController extends HttpController {
   private hotelService: HotelService
@@ -15,11 +21,28 @@ export class BookHotelRoomController extends HttpController {
     this.sagaChannel = sagaChannel
   }
 
-  // todo params take from request body
-  async exec() {
-    const roomId = "room-1"
-    const username = "user-1"
-    const amount = 500
+  async exec(req: BookHotelRoomRequest) {
+    const roomId = req.params.room_id
+    const username = req.body.username
+
+    if (!username) {
+      return this.error(new ValidationError("username is required"))
+    }
+
+    const getHotelRoomResult = await this.hotelService.getRoom(roomId)
+    if (getHotelRoomResult.isError()) {
+      return this.error(getHotelRoomResult.data)
+    }
+
+    const hotelRoom = getHotelRoomResult.data
+
+    if (!hotelRoom) {
+      return this.error(
+        new NotFoundError("room does not exist", {
+          roomId,
+        })
+      )
+    }
 
     const result = await this.hotelService.getReservation(roomId)
     if (result.isError()) {
@@ -45,7 +68,7 @@ export class BookHotelRoomController extends HttpController {
       eventName: "book-hotel-room",
       roomId,
       username,
-      amount,
+      amount: hotelRoom.priceAmount,
     }
 
     this.sagaChannel.publish(message)

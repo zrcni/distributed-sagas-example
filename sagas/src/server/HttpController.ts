@@ -2,24 +2,31 @@ import { Request, Response } from "express"
 import { AppError, appErrorStatusCode, UnexpectedError } from "@/errors"
 import { HttpResult } from "./types"
 
-export abstract class HttpController {
-  abstract exec(req: Request, res: Response): HttpResult | Promise<HttpResult>
+export abstract class HttpController<ResBody = unknown> {
+  constructor() {
+    this.handleRequest = this.handleRequest.bind(this)
+  }
 
-  protected ok<T = unknown>(data: T): HttpResult {
+  abstract exec(
+    req: Request,
+    res: Response<ResBody>
+  ): HttpResult<ResBody> | Promise<HttpResult<ResBody>>
+
+  protected ok<T = unknown>(data: T): HttpResult<T> {
     return {
       status: 200,
       data,
     }
   }
 
-  protected noContent(): HttpResult {
+  protected noContent(): HttpResult<undefined> {
     return {
       status: 201,
     }
   }
 
   protected error<Err extends Error>(error: Err) {
-    return this.getErrorResult(error)
+    return this.getErrorResult<Err>(error)
   }
 
   public async handleRequest(req: Request, res: Response) {
@@ -33,20 +40,21 @@ export abstract class HttpController {
     }
   }
 
-  private getErrorResult(error: Error) {
+  getErrorResult<Err extends Error>(error: Err): HttpResult<{ error: Err }> {
     if (error instanceof AppError) {
       return {
         status: appErrorStatusCode(error),
-        data: { error: error.toJSON() },
+        data: { error },
       }
     }
 
     return {
       status: 500,
       data: {
+        // TODO type
         error: new UnexpectedError(
           "unexpected error occurred while handling the request"
-        ),
+        ) as unknown as Err,
       },
     }
   }

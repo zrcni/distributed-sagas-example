@@ -1,4 +1,4 @@
-import { ConflictError, NotFoundError } from "@/errors"
+import { ConflictError, NotFoundError, ValidationError } from "@/errors"
 import { Result, ResultError, ResultOk } from "@/Result"
 import { KeyValueStore } from "@/store/types"
 import { uuid } from "@/utils"
@@ -33,6 +33,20 @@ export class PaymentService {
     }
   }
 
+  async getAccount(
+    username: string
+  ): Promise<ResultOk<IPaymentAccount | null> | ResultError> {
+    let accountData: IPaymentAccount
+
+    try {
+      accountData = await this.accountStore.get(username)
+    } catch (err) {
+      return Result.error<Error>(err)
+    }
+
+    return Result.ok(accountData)
+  }
+
   async getInvoicesByUsername(
     username: string
   ): Promise<ResultOk<IInvoice[]> | ResultError> {
@@ -45,10 +59,16 @@ export class PaymentService {
     }
   }
 
-  async addBalance(
+  async addFunds(
     username: string,
     amount: number
   ): Promise<ResultOk<IPaymentAccount> | ResultError> {
+    if (amount <= 0) {
+      return Result.error(
+        new ValidationError("amount of funds must be positive", { amount })
+      )
+    }
+
     let accountData: IPaymentAccount
 
     try {
@@ -65,7 +85,7 @@ export class PaymentService {
 
     const paymentAccount = new PaymentAccount(accountData)
 
-    const addResult = paymentAccount.addBalance(amount)
+    const addResult = paymentAccount.addFunds(amount)
     if (addResult.isError()) {
       return addResult
     }
@@ -198,7 +218,7 @@ export class PaymentService {
 
     const paymentAccount = new PaymentAccount(accountData)
 
-    const result = paymentAccount.addBalance(invoiceData.amount)
+    const result = paymentAccount.addFunds(invoiceData.amount)
     if (result.isError()) {
       return result
     }

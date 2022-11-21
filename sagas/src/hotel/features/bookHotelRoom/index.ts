@@ -1,9 +1,32 @@
-import { IHotelRoomReservation } from "@/hotel/HotelRoomReservation"
-import { HotelService } from "@/hotel/HotelService"
-import { InMemoryKeyValueStore } from "@/store/InMemoryKeyValueStore"
+import { sagaInChannel } from "@/channel"
+import { Channel } from "@/channel/Channel"
+import { Queue } from "@/channel/Queue"
+import { hotelService } from "@/hotel"
+import { paymentService } from "@/payment"
+import { sagaCoordinator } from "@/sagas"
 import { BookHotelRoomController } from "./BookHotelRoomController"
+import { BookHotelRoomSubscription } from "./BookHotelRoomSubscription"
+import { HotelRoomBookedMessagePayload } from "./types"
 
-export const hotelStore = new InMemoryKeyValueStore<IHotelRoomReservation>()
-export const hotelService = new HotelService(hotelStore)
+export const bookHotelRoomController = new BookHotelRoomController(
+  hotelService,
+  sagaInChannel
+)
 
-export const bookHotelRoomController = new BookHotelRoomController(hotelService)
+const bookHotelRoomNotificationChannel = new Channel(new Queue())
+
+bookHotelRoomNotificationChannel.subscribe<HotelRoomBookedMessagePayload>(
+  (payload) => {
+    console.info(
+      `Hotel room ${payload.roomId} booked by ${payload.username} for ${payload.amount}€`
+    )
+  }
+)
+
+new BookHotelRoomSubscription(
+  sagaInChannel,
+  bookHotelRoomNotificationChannel,
+  sagaCoordinator,
+  hotelService,
+  paymentService
+).start()

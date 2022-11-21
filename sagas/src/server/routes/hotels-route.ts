@@ -1,9 +1,11 @@
 import { Router } from "express"
 import { BookHotelRoomController } from "@/hotel/features/bookHotelRoom/BookHotelRoomController"
+import { CreateHotelRoomController } from "@/hotel/features/createHotelRoom/CreateHotelRoomController"
 import { Routes } from "../types"
 
 interface HotelsRouteControllers {
   bookHotelRoomController: BookHotelRoomController
+  createHotelRoomController: CreateHotelRoomController
 }
 
 export class HotelsRoute implements Routes {
@@ -16,8 +18,12 @@ export class HotelsRoute implements Routes {
 
   private initializeRoutes(controllers: HotelsRouteControllers) {
     this.router.post(
-      this.path + "/rooms/book",
+      this.path + "/rooms/:room_id/book",
       controllers.bookHotelRoomController.handleRequest
+    )
+    this.router.post(
+      this.path + "/rooms",
+      controllers.createHotelRoomController.handleRequest
     )
   }
 }

@@ -10,3 +10,9 @@ export type BookHotelRoomMessagePayload = {
   amount: number
   username: string
 }
+
+export type HotelRoomBookedMessagePayload = {
+  roomId: string
+  amount: number
+  username: string
+}

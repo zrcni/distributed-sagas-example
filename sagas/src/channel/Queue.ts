@@ -1,5 +1,5 @@
 export class Queue<T = unknown> {
-  private items: T[]
+  private items: T[] = []
 
   put(item: T) {
     this.items.push(item)

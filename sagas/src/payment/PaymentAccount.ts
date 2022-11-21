@@ -22,7 +22,7 @@ export class PaymentAccount {
     }
   }
 
-  addBalance(amount: number): ResultOk {
+  addFunds(amount: number): ResultOk {
     this.balance += amount
     return Result.ok()
   }

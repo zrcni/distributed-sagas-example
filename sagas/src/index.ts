@@ -1,1 +1,1 @@
-console.info('hello (:')
+import "./server"

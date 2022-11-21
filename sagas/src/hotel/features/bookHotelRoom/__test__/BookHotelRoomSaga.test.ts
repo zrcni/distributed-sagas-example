@@ -1,21 +1,31 @@
+import { Channel } from "@/channel/Channel"
+import { Queue } from "@/channel/Queue"
 import { HotelService } from "@/hotel/HotelService"
-import { PaymentService } from "@/payment"
+import { PaymentService } from "@/payment/PaymentService"
 import { InMemorySagaLog } from "@/sagas/InMemorySagaLog"
+import { SagaCoordinator } from "@/sagas/SagaCoordinator"
 import { SagaRunner } from "@/sagas/SagaRunner"
 import { InMemoryKeyValueStore } from "@/store/InMemoryKeyValueStore"
 import { BookHotelRoomSaga } from "../BookHotelRoomSaga"
-import { BookHotelRoomSagaData } from "../types"
+import { BookHotelRoomSubscription } from "../BookHotelRoomSubscription"
+import { BookHotelRoomMessagePayload, BookHotelRoomSagaData } from "../types"
+import waitFor from "wait-for-expect"
 
 describe("BookHotelRoomSaga", () => {
   let hotelService: HotelService
   let paymentService: PaymentService
+  let coordinator: SagaCoordinator
 
   beforeEach(() => {
-    hotelService = new HotelService(new InMemoryKeyValueStore())
+    hotelService = new HotelService(
+      new InMemoryKeyValueStore(),
+      new InMemoryKeyValueStore()
+    )
     paymentService = new PaymentService(
       new InMemoryKeyValueStore(),
       new InMemoryKeyValueStore()
     )
+    coordinator = InMemorySagaLog.createInMemorySagaCoordinator()
   })
 
   /**
@@ -25,8 +35,6 @@ describe("BookHotelRoomSaga", () => {
    */
   it("book a hotel room", async () => {
     /** arrange */
-    const coordinator = InMemorySagaLog.createInMemorySagaCoordinator()
-
     const sagaResult = await coordinator.createSaga<BookHotelRoomSagaData>(
       "book-hotel-room",
       {
@@ -44,11 +52,14 @@ describe("BookHotelRoomSaga", () => {
       paymentService
     ).getSagaDefinition()
 
+    const createRoomResult = await hotelService.createRoom("room-1", 500)
+    expect(createRoomResult).toBeOkResult()
+
     const createAccountResult = await paymentService.createAccount("user-1")
     expect(createAccountResult).toBeOkResult()
 
-    const addBalanceResult = await paymentService.addBalance("user-1", 500)
-    expect(addBalanceResult).toBeOkResult()
+    const addFundsResult = await paymentService.addFunds("user-1", 500)
+    expect(addFundsResult).toBeOkResult()
 
     /** act */
     await new SagaRunner(saga, bookHotelRoomSaga)
@@ -72,5 +83,50 @@ describe("BookHotelRoomSaga", () => {
     const invoice = getInvoicesResult.data[0]
     expect(invoice).toHaveProperty("amount", 500)
     expect(invoice.cancelledAt).toBe(null)
+  })
+
+  it("BookHotelRoomSubscription", async () => {
+    /** arrange */
+    const createRoomResult = await hotelService.createRoom("room-1", 500)
+    expect(createRoomResult).toBeOkResult()
+
+    const createAccountResult = await paymentService.createAccount("user-1")
+    expect(createAccountResult).toBeOkResult()
+
+    const addFundsResult = await paymentService.addFunds("user-1", 500)
+    expect(addFundsResult).toBeOkResult()
+
+    const inChannel = new Channel(new Queue())
+    const outChannel = new Channel(new Queue())
+
+    new BookHotelRoomSubscription(
+      inChannel,
+      outChannel,
+      coordinator,
+      hotelService,
+      paymentService
+    ).start()
+
+    const outChanHandler = jest.fn()
+    outChannel.subscribe(outChanHandler)
+
+    /** act */
+    inChannel.publish<BookHotelRoomMessagePayload>({
+      eventName: "book-hotel-room",
+      username: "user-1",
+      amount: 500,
+      roomId: "room-1",
+    })
+
+    /** assert */
+    await waitFor(() => {
+      expect(outChanHandler).toHaveBeenCalled()
+    })
+
+    expect(outChanHandler).toHaveBeenCalledWith({
+      amount: 500,
+      roomId: "room-1",
+      username: "user-1",
+    })
   })
 })

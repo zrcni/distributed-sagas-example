@@ -1,6 +1,6 @@
 import { IHotelRoomReservation } from "@/hotel/HotelRoomReservation"
 import { HotelService } from "@/hotel/HotelService"
-import { PaymentService } from "@/payment"
+import { PaymentService } from "@/payment/PaymentService"
 import { RequestPaymentResult } from "@/payment/types"
 import { start } from "@/sagas/saga-definition"
 import { BookHotelRoomSagaData } from "./types"

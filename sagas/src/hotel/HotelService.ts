@@ -1,22 +1,70 @@
-import { ConflictError } from "@/errors"
+import { ConflictError, NotFoundError } from "@/errors"
 import { Result, ResultError, ResultOk } from "@/Result"
 import { KeyValueStore } from "@/store/types"
 import { uuid } from "@/utils"
+import { HotelRoom, IHotelRoom } from "./HotelRoom"
 import {
   HotelRoomReservation,
   IHotelRoomReservation,
 } from "./HotelRoomReservation"
 
 export class HotelService {
-  store: KeyValueStore<IHotelRoomReservation>
+  reservationStore: KeyValueStore<IHotelRoomReservation>
+  roomStore: KeyValueStore<IHotelRoom>
 
-  constructor(store: KeyValueStore<IHotelRoomReservation>) {
-    this.store = store
+  constructor(
+    reservationStore: KeyValueStore<IHotelRoomReservation>,
+    roomStore: KeyValueStore<IHotelRoom>
+  ) {
+    this.reservationStore = reservationStore
+    this.roomStore = roomStore
+  }
+
+  async createRoom(
+    roomId: string,
+    priceAmount: number
+  ): Promise<ResultOk<IHotelRoom> | ResultError> {
+    let room: IHotelRoom
+    try {
+      room = await this.roomStore.get(roomId)
+    } catch (err) {
+      return Result.error<Error>(err)
+    }
+
+    if (room) {
+      return Result.error(
+        new ConflictError("room already exists", {
+          roomId,
+        })
+      )
+    }
+
+    const newRoom = new HotelRoom({ roomId, priceAmount })
+
+    try {
+      await this.roomStore.set(roomId, newRoom.toJSON())
+      return Result.ok(newRoom.toJSON())
+    } catch (err) {
+      return Result.error<Error>(err)
+    }
+  }
+
+  async getRoom(
+    roomId: string
+  ): Promise<ResultOk<IHotelRoom | null> | ResultError> {
+    let room: IHotelRoom
+    try {
+      room = await this.roomStore.get(roomId)
+    } catch (err) {
+      return Result.error<Error>(err)
+    }
+
+    return Result.ok(room)
   }
 
   async getReservation(roomId: string) {
     try {
-      const reservation = await this.store.get(roomId)
+      const reservation = await this.reservationStore.get(roomId)
       return Result.ok(reservation)
     } catch (err) {
       return Result.error<Error>(err)
@@ -27,10 +75,26 @@ export class HotelService {
     roomId: string,
     username: string
   ): Promise<ResultOk<HotelRoomReservation> | ResultError> {
+    let room: IHotelRoom
+
+    try {
+      room = await this.roomStore.get(roomId)
+    } catch (err) {
+      return Result.error<Error>(err)
+    }
+
+    if (!room) {
+      return Result.error(
+        new NotFoundError("room does not exist", {
+          roomId,
+        })
+      )
+    }
+
     let data: IHotelRoomReservation
 
     try {
-      data = await this.store.get(roomId)
+      data = await this.reservationStore.get(roomId)
     } catch (err) {
       return Result.error<Error>(err)
     }
@@ -55,7 +119,7 @@ export class HotelService {
     })
 
     try {
-      await this.store.set(roomId, reservation.toJSON())
+      await this.reservationStore.set(roomId, reservation.toJSON())
     } catch (err) {
       return Result.error<Error>(err)
     }
@@ -66,7 +130,7 @@ export class HotelService {
   async releaseRoom(confirmationNumber: string) {
     let data: IHotelRoomReservation
 
-    for (const v of await this.store.getAll()) {
+    for (const v of await this.reservationStore.getAll()) {
       if (v.confirmationNumber === confirmationNumber) {
         data = v
         break
@@ -79,7 +143,7 @@ export class HotelService {
       return Result.ok()
     }
 
-    await this.store.remove(data.roomId)
+    await this.reservationStore.remove(data.roomId)
 
     return Result.ok()
   }

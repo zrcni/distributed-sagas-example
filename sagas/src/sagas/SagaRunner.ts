@@ -5,13 +5,13 @@ import { SagaStep } from "./saga-definition/SagaStep"
 
 type ErrorHandler = (err: Error) => void
 
-export class SagaRunner {
-  saga: Saga
+export class SagaRunner<StartPayload = unknown> {
+  saga: Saga<StartPayload>
   sagaDefinition: SagaDefinition
   currentStepIndex: number
   handleError: ErrorHandler
 
-  constructor(saga: Saga, sagaDefinition: SagaDefinition) {
+  constructor(saga: Saga<StartPayload>, sagaDefinition: SagaDefinition) {
     this.saga = saga
     this.sagaDefinition = sagaDefinition
     this.handleError = () => {}
@@ -36,7 +36,7 @@ export class SagaRunner {
 
   async run() {
     if (await this.saga.isSagaCompleted()) {
-      return
+      return this.saga
     }
     if (await this.saga.isSagaAborted()) {
       return this.compensate()
@@ -46,7 +46,7 @@ export class SagaRunner {
 
     const data = await this.saga.getJob()
     try {
-      await this.iterate(data)
+      return await this.iterate(data)
     } catch (err) {
       logger.info(
         `Failed to run task ${this.getCurrentStep().taskName}. Aborting saga...`
@@ -76,7 +76,7 @@ export class SagaRunner {
     }
   }
 
-  private async iterate(data: unknown) {
+  private async iterate(data: unknown): Promise<Saga<StartPayload>> {
     const step = this.getCurrentStep()
 
     if (step.isStart) {
@@ -91,7 +91,7 @@ export class SagaRunner {
         throw endSagaResult.data
       }
       logger.info(`Saga ended`)
-      return
+      return this.saga
     }
 
     const prevStep = this.getPreviousStep()
@@ -121,7 +121,7 @@ export class SagaRunner {
     return this.iterate(data)
   }
 
-  private async compensate() {
+  private async compensate(): Promise<Saga<StartPayload>> {
     const data = await this.saga.getJob()
 
     for (let i = this.sagaDefinition.steps.length - 1; i >= 0; i--) {
@@ -148,5 +148,7 @@ export class SagaRunner {
         await this.saga.endCompensatingTask(step.taskName, result)
       }
     }
+
+    return this.saga
   }
 }
