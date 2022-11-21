@@ -1,6 +1,8 @@
 distributed-sagas-example
 
-reference: https://github.com/CaitieM20/DistributedSagas
+references:
+- https://github.com/CaitieM20/DistributedSagas
+- https://github.com/eventuate-tram/eventuate-tram-sagas
 
 ```
 1.
