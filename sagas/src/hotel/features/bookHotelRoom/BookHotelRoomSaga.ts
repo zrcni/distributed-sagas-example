@@ -16,7 +16,7 @@ export class BookHotelRoomSaga extends SagaImplementation {
     .invoke(this.reserveRoom.bind(this))
     .compensate(this.releaseRoom.bind(this))
     .withName(BookHotelRoomSaga.tasks.ReserveRoom)
-    .step()
+    .next()
     .invoke(this.requestPayment.bind(this))
     .compensate(this.refundPayment.bind(this))
     .withName(BookHotelRoomSaga.tasks.RequestPayment)

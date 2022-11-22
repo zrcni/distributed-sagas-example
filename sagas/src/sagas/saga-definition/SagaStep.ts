@@ -13,7 +13,7 @@ export class SagaStep {
     this.builder = builder
   }
 
-  step() {
+  next() {
     return this.builder.nextStep()
   }
 
