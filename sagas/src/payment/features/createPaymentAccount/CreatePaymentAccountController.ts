@@ -1,7 +1,7 @@
 import { Request } from "express"
 import { HttpController } from "@/server/HttpController"
 import { PaymentService } from "@/payment/PaymentService"
-import { ConflictError } from "@/errors"
+import { PaymentAccountAlreadyExistsError } from "@/errors"
 
 type CreatePaymentAccountResult = undefined | { error: Error }
 
@@ -31,7 +31,7 @@ export class CreatePaymentAccountController extends HttpController<CreatePayment
 
     if (existingAccount) {
       return this.error(
-        new ConflictError("account is already taken", {
+        new PaymentAccountAlreadyExistsError("account is already taken", {
           username,
         })
       )

@@ -1,4 +1,8 @@
-import { ConflictError, NotFoundError } from "@/errors"
+import {
+  HotelRoomAlreadyExistsError,
+  HotelRoomAlreadyReservedError,
+  HotelRoomNotFoundError,
+} from "@/errors"
 import { Result, ResultError, ResultOk } from "@/Result"
 import { KeyValueStore } from "@/store/types"
 import { uuid } from "@/utils"
@@ -33,7 +37,7 @@ export class HotelService {
 
     if (room) {
       return Result.error(
-        new ConflictError("room already exists", {
+        new HotelRoomAlreadyExistsError("room already exists", {
           roomId,
         })
       )
@@ -85,7 +89,7 @@ export class HotelService {
 
     if (!room) {
       return Result.error(
-        new NotFoundError("room does not exist", {
+        new HotelRoomNotFoundError("room does not exist", {
           roomId,
         })
       )
@@ -106,9 +110,12 @@ export class HotelService {
 
     if (data) {
       return Result.error(
-        new ConflictError("room is already reserved by someone else", {
-          roomId,
-        })
+        new HotelRoomAlreadyReservedError(
+          "room is already reserved by someone else",
+          {
+            roomId,
+          }
+        )
       )
     }
 

@@ -1,4 +1,5 @@
 import { Channel } from "@/channel/Channel"
+import { AppError, UnexpectedError } from "@/errors"
 import { HotelService } from "@/hotel/HotelService"
 import { PaymentService } from "@/payment/PaymentService"
 import { RequestPaymentResult } from "@/payment/types"
@@ -57,7 +58,10 @@ export class BookHotelRoomSubscription {
         data: {
           roomId: payload.data.roomId,
           username: payload.data.username,
-          reason: result.data.message,
+          error:
+            result.data instanceof AppError
+              ? result.data.toJSON()
+              : new UnexpectedError("unexpected error").toJSON(),
         },
       })
     }
@@ -112,7 +116,10 @@ export class BookHotelRoomSubscription {
         data: {
           roomId: data.roomId,
           username: data.username,
-          reason: error.message,
+          error:
+            error instanceof AppError
+              ? error.toJSON()
+              : new UnexpectedError("unexpected error").toJSON(),
         },
       })
     }

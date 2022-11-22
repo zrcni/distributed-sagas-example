@@ -1,4 +1,4 @@
-import { ConflictError } from "@/errors"
+import { InvalidSagaStateError } from "@/errors"
 import { Result } from "@/Result"
 import { SagaCoordinator } from "./SagaCoordinator"
 import { SagaMessageType } from "./SagaMessage"
@@ -26,7 +26,9 @@ export class SagaRecovery {
     const startMsg = messages[0]
     if (startMsg.msgType !== SagaMessageType.StartSaga) {
       return Result.error(
-        new ConflictError("StartSaga must be the first message", { sagaId })
+        new InvalidSagaStateError("StartSaga must be the first message", {
+          sagaId,
+        })
       )
     }
 

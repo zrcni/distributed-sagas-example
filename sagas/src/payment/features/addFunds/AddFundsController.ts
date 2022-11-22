@@ -1,7 +1,7 @@
 import { Request } from "express"
 import { HttpController } from "@/server/HttpController"
 import { PaymentService } from "@/payment/PaymentService"
-import { NotFoundError, ValidationError } from "@/errors"
+import { PaymentAccountNotFoundError, ValidationError } from "@/errors"
 
 type AddFundsResult = undefined | { error: Error }
 
@@ -40,7 +40,7 @@ export class AddFundsController extends HttpController<AddFundsResult> {
 
     if (!existingAccount) {
       return this.error(
-        new NotFoundError("account does not exist", {
+        new PaymentAccountNotFoundError("account does not exist", {
           username,
         })
       )

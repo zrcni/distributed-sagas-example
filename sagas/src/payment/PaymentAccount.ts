@@ -1,4 +1,4 @@
-import { ValidationError } from "@/errors"
+import { PaymentAccountNotEnoughFundsError } from "@/errors"
 import { Result, ResultError, ResultOk } from "@/Result"
 
 export interface IPaymentAccount {
@@ -27,12 +27,17 @@ export class PaymentAccount {
     return Result.ok()
   }
 
-  subtractFunds(amount: number): ResultOk | ResultError<ValidationError> {
+  subtractFunds(
+    amount: number
+  ): ResultOk | ResultError<PaymentAccountNotEnoughFundsError> {
     if (amount > this.balance) {
       return Result.error(
-        new ValidationError("payment account does not have enough funds", {
-          balance: this.balance,
-        })
+        new PaymentAccountNotEnoughFundsError(
+          "payment account does not have enough funds",
+          {
+            balance: this.balance,
+          }
+        )
       )
     }
 

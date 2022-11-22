@@ -1,7 +1,7 @@
 import { Request } from "express"
 import { HttpController } from "@/server/HttpController"
 import { HotelService } from "@/hotel/HotelService"
-import { ConflictError, ValidationError } from "@/errors"
+import { HotelRoomAlreadyExistsError, ValidationError } from "@/errors"
 
 type CreateHotelRoomResult = undefined | { error: Error }
 
@@ -40,7 +40,7 @@ export class CreateHotelRoomController extends HttpController<CreateHotelRoomRes
 
     if (existingHotelRoom) {
       return this.error(
-        new ConflictError("room already exists", {
+        new HotelRoomAlreadyExistsError("room already exists", {
           roomId,
         })
       )

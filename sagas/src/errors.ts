@@ -1,3 +1,10 @@
+export interface AppErrorJSON<D = unknown, M = unknown> {
+  name: string
+  message: string
+  data: D
+  metadata: M
+}
+
 export class AppError<D = unknown, M = unknown> extends Error {
   private _data: D
   private _metadata: M
@@ -8,8 +15,9 @@ export class AppError<D = unknown, M = unknown> extends Error {
     this._metadata = metadata
   }
 
-  toJSON() {
+  toJSON(): AppErrorJSON<D, M> {
     return {
+      name: this.constructor.name,
       message: this.message,
       data: this.data,
       metadata: this.metadata,
@@ -30,9 +38,24 @@ export class ValidationError extends AppError {}
 export class NotFoundError extends AppError {}
 export class ConflictError extends AppError {}
 export class TimeoutError extends AppError {}
+
 export class InvalidSagaMessageError extends AppError {}
 export class InvalidSagaStateError extends AppError {}
 export class InvalidSagaStateUpdateError extends AppError {}
+export class SagaNotRunningError extends AppError {}
+export class SagaAlreadyRunningError extends AppError {}
+
+export class HotelRoomNotFoundError extends NotFoundError {}
+export class HotelRoomAlreadyExistsError extends ConflictError {}
+export class HotelRoomAlreadyReservedError extends ConflictError {}
+
+export class PaymentAccountNotFoundError extends NotFoundError {}
+export class PaymentAccountAlreadyExistsError extends ConflictError {}
+export class PaymentAccountNotEnoughFundsError extends ConflictError {}
+export class PaymentAccountInvalidFundsError extends ConflictError {}
+
+export class InvoiceNotFoundError extends NotFoundError {}
+export class InvoiceCancelledError extends ConflictError {}
 
 export function appErrorStatusCode(err: AppError | Error) {
   if (err instanceof ValidationError) {
@@ -55,6 +78,15 @@ export function appErrorStatusCode(err: AppError | Error) {
   }
   if (err instanceof InvalidSagaStateUpdateError) {
     return 400
+  }
+  if (err instanceof SagaNotRunningError) {
+    return 400
+  }
+  if (err instanceof SagaAlreadyRunningError) {
+    return 400
+  }
+  if (err instanceof UnexpectedError) {
+    return 500
   }
 
   return 500

@@ -1,4 +1,9 @@
-import { ConflictError, NotFoundError, ValidationError } from "@/errors"
+import {
+  InvoiceCancelledError,
+  InvoiceNotFoundError,
+  PaymentAccountInvalidFundsError,
+  PaymentAccountNotFoundError,
+} from "@/errors"
 import { Result, ResultError, ResultOk } from "@/Result"
 import { KeyValueStore } from "@/store/types"
 import { uuid } from "@/utils"
@@ -65,7 +70,10 @@ export class PaymentService {
   ): Promise<ResultOk<IPaymentAccount> | ResultError> {
     if (amount <= 0) {
       return Result.error(
-        new ValidationError("amount of funds must be positive", { amount })
+        new PaymentAccountInvalidFundsError(
+          "amount of funds must be positive",
+          { amount }
+        )
       )
     }
 
@@ -79,7 +87,9 @@ export class PaymentService {
 
     if (!accountData) {
       return Result.error(
-        new NotFoundError("payment account not found", { username })
+        new PaymentAccountNotFoundError("payment account not found", {
+          username,
+        })
       )
     }
 
@@ -123,7 +133,7 @@ export class PaymentService {
     if (existingInvoice) {
       if (existingInvoice.isCancelled) {
         return Result.error(
-          new ConflictError("invoice has been cancelled", {
+          new InvoiceCancelledError("invoice has been cancelled", {
             invoiceNumber: existingInvoice.invoiceNumber,
             paymentNumber,
           })
@@ -144,7 +154,9 @@ export class PaymentService {
 
     if (!accountData) {
       return Result.error(
-        new NotFoundError("payment account not found", { username })
+        new PaymentAccountNotFoundError("payment account not found", {
+          username,
+        })
       )
     }
 
@@ -189,9 +201,12 @@ export class PaymentService {
 
     if (!invoice) {
       return Result.error(
-        new NotFoundError("invoice does not exist for the payment number", {
-          paymentNumber,
-        })
+        new InvoiceNotFoundError(
+          "invoice does not exist for the payment number",
+          {
+            paymentNumber,
+          }
+        )
       )
     }
 
@@ -210,7 +225,7 @@ export class PaymentService {
 
     if (!accountData) {
       return Result.error(
-        new NotFoundError("payment account not found", {
+        new PaymentAccountNotFoundError("payment account not found", {
           username: invoiceData.username,
         })
       )

@@ -1,3 +1,4 @@
+import waitFor from "wait-for-expect"
 import { Channel } from "@/channel/Channel"
 import { Queue } from "@/channel/Queue"
 import { HotelService } from "@/hotel/HotelService"
@@ -7,7 +8,7 @@ import { SagaCoordinator } from "@/sagas/SagaCoordinator"
 import { InMemoryKeyValueStore } from "@/store/InMemoryKeyValueStore"
 import { BookHotelRoomSubscription } from "../BookHotelRoomSubscription"
 import { BookHotelRoomMessagePayload } from "../types"
-import waitFor from "wait-for-expect"
+import { PaymentAccountNotEnoughFundsError } from "@/errors"
 
 describe("BookHotelRoomSaga", () => {
   let hotelService: HotelService
@@ -147,8 +148,10 @@ describe("BookHotelRoomSaga", () => {
     expect(payload).toHaveProperty("eventName", "book-hotel-room-failed")
     expect(payload).toHaveProperty("data.roomId", "room-1")
     expect(payload).toHaveProperty("data.username", "user-1")
-    expect(payload).toHaveProperty("data.reason")
-    expect(payload.data.reason).toMatch(/not have enough funds/i)
+    expect(payload).toHaveProperty(
+      "data.error.name",
+      PaymentAccountNotEnoughFundsError.name
+    )
 
     // reservation should have been reverted
     const getReservationResult = await hotelService.getReservation("room-1")

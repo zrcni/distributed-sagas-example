@@ -1,7 +1,11 @@
 import { Request } from "express"
 import { HttpController } from "@/server/HttpController"
 import { HotelService } from "@/hotel/HotelService"
-import { ConflictError, NotFoundError, ValidationError } from "@/errors"
+import {
+  HotelRoomAlreadyReservedError,
+  HotelRoomNotFoundError,
+  ValidationError,
+} from "@/errors"
 import { ChannelPublisher } from "@/channel/Channel"
 import { BookHotelRoomMessagePayload } from "./types"
 
@@ -38,7 +42,7 @@ export class BookHotelRoomController extends HttpController {
 
     if (!hotelRoom) {
       return this.error(
-        new NotFoundError("room does not exist", {
+        new HotelRoomNotFoundError("room does not exist", {
           roomId,
         })
       )
@@ -58,9 +62,12 @@ export class BookHotelRoomController extends HttpController {
       }
 
       return this.error(
-        new ConflictError("room has already been reserved by another user", {
-          roomId,
-        })
+        new HotelRoomAlreadyReservedError(
+          "room has already been reserved by another user",
+          {
+            roomId,
+          }
+        )
       )
     }
 

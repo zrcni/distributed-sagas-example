@@ -1,4 +1,4 @@
-import { ConflictError } from "@/errors"
+import { SagaAlreadyRunningError, SagaNotRunningError } from "@/errors"
 import { logger } from "@/logger"
 import { Result, ResultError, ResultOk } from "@/Result"
 import { SagaLog } from "./types"
@@ -14,12 +14,12 @@ export class InMemorySagaLog implements SagaLog {
 
   async getMessages(
     sagaId: string
-  ): Promise<ResultOk<SagaMessage[]> | ResultError<ConflictError>> {
+  ): Promise<ResultOk<SagaMessage[]> | ResultError<SagaNotRunningError>> {
     const messages = this.sagas[sagaId]
 
     if (!messages) {
       return Result.error(
-        new ConflictError("saga has not started yet", {
+        new SagaNotRunningError("saga has not started yet", {
           sagaId,
         })
       )
@@ -36,13 +36,13 @@ export class InMemorySagaLog implements SagaLog {
   async startSaga<D>(
     sagaId: string,
     job: D
-  ): Promise<ResultOk | ResultError<ConflictError>> {
+  ): Promise<ResultOk | ResultError<SagaAlreadyRunningError>> {
     logger.info(`Start saga ${sagaId}`)
 
     const messages = this.sagas[sagaId]
     if (messages) {
       return Result.error(
-        new ConflictError("saga has already been started", { sagaId })
+        new SagaAlreadyRunningError("saga has already been started", { sagaId })
       )
     }
 
@@ -55,7 +55,7 @@ export class InMemorySagaLog implements SagaLog {
 
   async logMessage(
     msg: SagaMessage
-  ): Promise<ResultOk | ResultError<ConflictError>> {
+  ): Promise<ResultOk | ResultError<SagaNotRunningError>> {
     logger.info(
       `Saga ${msg.sagaId}: ${msg.msgType}${msg.taskId ? ` ${msg.taskId}` : ""}`
     )
@@ -64,7 +64,7 @@ export class InMemorySagaLog implements SagaLog {
 
     if (!messages) {
       return Result.error(
-        new ConflictError("saga has not started yet", {
+        new SagaNotRunningError("saga has not started yet", {
           sagaId: msg.sagaId,
           taskId: msg.taskId,
         })

@@ -1,3 +1,4 @@
+import { AppErrorJSON } from "@/errors"
 import { IHotelRoomReservation } from "@/hotel/HotelRoomReservation"
 
 export type ReserveHotelRoomResult = IHotelRoomReservation
@@ -33,6 +34,6 @@ export type BookHotelRoomFailedMessagePayload = {
   data: {
     roomId: string
     username: string
-    reason: string
+    error: AppErrorJSON
   }
 }
