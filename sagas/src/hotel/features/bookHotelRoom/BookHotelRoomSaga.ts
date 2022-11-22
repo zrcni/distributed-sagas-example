@@ -7,14 +7,19 @@ import { SagaImplementation } from "@/sagas/SagaImplementation"
 import { BookHotelRoomSagaData, ReserveHotelRoomResult } from "./types"
 
 export class BookHotelRoomSaga extends SagaImplementation {
+  static tasks = {
+    ReserveRoom: "reserve-room",
+    RequestPayment: "request-payment",
+  }
+
   protected sagaDefinition = start()
     .invoke(this.reserveRoom.bind(this))
     .compensate(this.releaseRoom.bind(this))
-    .withName("reserve-room")
+    .withName(BookHotelRoomSaga.tasks.ReserveRoom)
     .step()
     .invoke(this.requestPayment.bind(this))
     .compensate(this.refundPayment.bind(this))
-    .withName("request-payment")
+    .withName(BookHotelRoomSaga.tasks.RequestPayment)
     .end()
 
   private hotelService: HotelService

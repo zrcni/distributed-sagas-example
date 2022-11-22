@@ -10,15 +10,29 @@ export type BookHotelRoomSagaData = {
 
 export type BookHotelRoomMessagePayload = {
   eventName: "book-hotel-room"
-  roomId: string
-  amount: number
-  username: string
+  data: {
+    roomId: string
+    amount: number
+    username: string
+  }
 }
 
 export type HotelRoomBookedMessagePayload = {
-  roomId: string
-  amount: number
-  username: string
-  invoiceNumber: string
-  confirmationNumber: string
+  eventName: "hotel-room-booked"
+  data: {
+    roomId: string
+    amount: number
+    username: string
+    invoiceNumber: string
+    confirmationNumber: string
+  }
+}
+
+export type BookHotelRoomFailedMessagePayload = {
+  eventName: "book-hotel-room-failed"
+  data: {
+    roomId: string
+    username: string
+    reason: string
+  }
 }

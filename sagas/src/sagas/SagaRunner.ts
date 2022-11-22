@@ -51,9 +51,11 @@ export class SagaRunner<StartPayload = unknown> {
       logger.info(
         `Failed to run task ${this.getCurrentStep().taskName}. Aborting saga...`
       )
+      // TODO add error as data to saga, but where?
       this.handleError(err)
       await this.saga.abortSaga()
       await this.compensate()
+      return this.saga
     }
   }
 

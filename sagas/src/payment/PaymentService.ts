@@ -103,7 +103,7 @@ export class PaymentService {
   }
 
   /**
-   * Create invoice and subtract balance from payment account
+   * Create invoice and subtract funds from payment account
    */
   async requestPayment(
     paymentNumber: string,
@@ -174,7 +174,7 @@ export class PaymentService {
   }
 
   /**
-   * Add balance to payment account and cancel invoice
+   * Add funds to payment account and cancel invoice
    */
   async refundPayment(paymentNumber: string) {
     let invoiceData: IInvoice

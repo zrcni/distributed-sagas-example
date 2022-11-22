@@ -66,9 +66,11 @@ export class BookHotelRoomController extends HttpController {
 
     const message: BookHotelRoomMessagePayload = {
       eventName: "book-hotel-room",
-      roomId,
-      username,
-      amount: hotelRoom.priceAmount,
+      data: {
+        roomId,
+        username,
+        amount: hotelRoom.priceAmount,
+      },
     }
 
     this.sagaChannel.publish(message)

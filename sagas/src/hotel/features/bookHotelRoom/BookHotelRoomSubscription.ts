@@ -6,6 +6,7 @@ import { SagaCoordinator } from "@/sagas/SagaCoordinator"
 import { SagaRunner } from "@/sagas/SagaRunner"
 import { BookHotelRoomSaga } from "./BookHotelRoomSaga"
 import {
+  BookHotelRoomFailedMessagePayload,
   BookHotelRoomMessagePayload,
   BookHotelRoomSagaData,
   HotelRoomBookedMessagePayload,
@@ -40,19 +41,25 @@ export class BookHotelRoomSubscription {
   }
 
   private async handleMessage(payload: BookHotelRoomMessagePayload) {
-    const sagaId = `book-hotel-room:${payload.roomId}:${payload.username}`
+    const sagaId = `book-hotel-room:${payload.data.roomId}:${payload.data.username}`
     const result = await this.sagaCoordinator.createSaga<BookHotelRoomSagaData>(
       sagaId,
       {
-        roomId: payload.roomId,
-        username: payload.username,
-        amount: payload.amount,
+        roomId: payload.data.roomId,
+        username: payload.data.username,
+        amount: payload.data.amount,
       }
     )
 
     if (result.isError()) {
-      // WHAT DO
-      return
+      return this.outChannel.publish<BookHotelRoomFailedMessagePayload>({
+        eventName: "book-hotel-room-failed",
+        data: {
+          roomId: payload.data.roomId,
+          username: payload.data.username,
+          reason: result.data.message,
+        },
+      })
     }
 
     const bookHotelRoomSaga = new BookHotelRoomSaga(
@@ -60,29 +67,53 @@ export class BookHotelRoomSubscription {
       this.paymentService
     ).getSagaDefinition()
 
+    let error: Error
+
     const saga = await new SagaRunner<BookHotelRoomSagaData>(
       result.data,
       bookHotelRoomSaga
     )
-      // what do
+      // TODO add abort reason to saga?
       .onError((err) => {
-        console.error(err)
+        error = err
       })
       .run()
 
     if (await saga.isSagaCompleted()) {
       const data = await saga.getJob()
+
       const reserveRoomResult =
-        await saga.getEndTaskData<ReserveHotelRoomResult>("reserve-room")
+        await saga.getEndTaskData<ReserveHotelRoomResult>(
+          BookHotelRoomSaga.tasks.ReserveRoom
+        )
+
       const requestPaymentResult =
-        await saga.getEndTaskData<RequestPaymentResult>("request-payment")
+        await saga.getEndTaskData<RequestPaymentResult>(
+          BookHotelRoomSaga.tasks.RequestPayment
+        )
 
       this.outChannel.publish<HotelRoomBookedMessagePayload>({
-        amount: data.amount,
-        roomId: data.roomId,
-        username: data.username,
-        invoiceNumber: requestPaymentResult.invoiceNumber,
-        confirmationNumber: reserveRoomResult.confirmationNumber,
+        eventName: "hotel-room-booked",
+        data: {
+          amount: data.amount,
+          roomId: data.roomId,
+          username: data.username,
+          invoiceNumber: requestPaymentResult.invoiceNumber,
+          confirmationNumber: reserveRoomResult.confirmationNumber,
+        },
+      })
+    }
+
+    if (await saga.isSagaAborted()) {
+      const data = await saga.getJob()
+
+      this.outChannel.publish<BookHotelRoomFailedMessagePayload>({
+        eventName: "book-hotel-room-failed",
+        data: {
+          roomId: data.roomId,
+          username: data.username,
+          reason: error.message,
+        },
       })
     }
   }
